@@ -41,3 +41,13 @@ func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	app.writeJSON(w, http.StatusCreated, endpoint)
 }
+
+func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
+	endpoints, err := app.db.ListEndpoints(r.Context())
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, endpoints)
+
+}
