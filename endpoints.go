@@ -7,7 +7,9 @@ import (
 
 	"github.com/biplob-codes/capto/internal/db"
 	"github.com/biplob-codes/capto/internal/utils"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type CreateEndpointReq struct {
@@ -50,4 +52,23 @@ func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 	app.writeJSON(w, http.StatusOK, endpoints)
 
+}
+
+func (app *application) getEndpoint(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var id pgtype.UUID
+	if err := id.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	endpoint, err := app.db.GetEndpoint(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, endpoint)
 }
