@@ -2,8 +2,9 @@ package main
 
 import "net/http"
 
-func (a *application) router() *http.ServeMux {
+func (app *application) router() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", a.healthHandler)
+	mux.HandleFunc("GET /health", app.healthHandler)
+	mux.HandleFunc("POST /endpoints", app.createEndpoint)
 	return mux
 }
