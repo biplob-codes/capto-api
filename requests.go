@@ -73,3 +73,22 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusCreated, req)
 }
+
+func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Request) {
+	endpointIdParam := r.PathValue("endpointId")
+	var endpointId pgtype.UUID
+	if err := endpointId.Scan(endpointIdParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	req, err := app.db.GetRequestsByEndpointId(r.Context(), endpointId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, req)
+}
