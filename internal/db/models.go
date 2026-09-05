@@ -5,8 +5,57 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type ReqMethod string
+
+const (
+	ReqMethodGET     ReqMethod = "GET"
+	ReqMethodPOST    ReqMethod = "POST"
+	ReqMethodPUT     ReqMethod = "PUT"
+	ReqMethodPATCH   ReqMethod = "PATCH"
+	ReqMethodDELETE  ReqMethod = "DELETE"
+	ReqMethodOPTIONS ReqMethod = "OPTIONS"
+)
+
+func (e *ReqMethod) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ReqMethod(s)
+	case string:
+		*e = ReqMethod(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ReqMethod: %T", src)
+	}
+	return nil
+}
+
+type NullReqMethod struct {
+	ReqMethod ReqMethod `json:"reqMethod"`
+	Valid     bool      `json:"valid"` // Valid is true if ReqMethod is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullReqMethod) Scan(value interface{}) error {
+	if value == nil {
+		ns.ReqMethod, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ReqMethod.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullReqMethod) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ReqMethod), nil
+}
 
 type Endpoint struct {
 	ID        pgtype.UUID        `json:"id"`
@@ -14,4 +63,20 @@ type Endpoint struct {
 	Token     string             `json:"token"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+}
+
+type Request struct {
+	ID          pgtype.UUID        `json:"id"`
+	Url         string             `json:"url"`
+	RemoteAddr  string             `json:"remoteAddr"`
+	BodySize    int32              `json:"bodySize"`
+	Method      ReqMethod          `json:"method"`
+	Duration    int32              `json:"duration"`
+	Note        pgtype.Text        `json:"note"`
+	Headers     pgtype.Text        `json:"headers"`
+	Body        pgtype.Text        `json:"body"`
+	QueryParams pgtype.Text        `json:"queryParams"`
+	EndpointID  pgtype.UUID        `json:"endpointId"`
+	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
 }
