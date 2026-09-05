@@ -12,6 +12,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type RequestNote struct {
+	Note string `json:"note" validate:"required,max=256"`
+}
+
 func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
 	start := time.Now()
@@ -110,4 +114,34 @@ func (app *application) getRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.writeJSON(w, http.StatusOK, req)
+}
+
+func (app *application) addNoteToRequests(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var reqId pgtype.UUID
+	if err := reqId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	var reqNote RequestNote
+	if err := json.NewDecoder(r.Body).Decode(&reqNote); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if err := app.validate.Struct(reqNote); err != nil {
+		app.failedValidationResponse(w, r, err)
+		return
+	}
+	pgNote := pgtype.Text{String: reqNote.Note, Valid: true}
+	req, err := app.db.AddRequestNote(r.Context(), db.AddRequestNoteParams{Note: pgNote, ID: reqId})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, req)
+
 }
