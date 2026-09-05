@@ -15,6 +15,7 @@ type Querier interface {
 	CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (Endpoint, error)
 	CreateRequest(ctx context.Context, arg CreateRequestParams) (Request, error)
 	GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error)
+	GetEndpointByToken(ctx context.Context, token string) (Endpoint, error)
 	GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error)
 	GetRequestsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]Request, error)
 	ListEndpoints(ctx context.Context) ([]Endpoint, error)

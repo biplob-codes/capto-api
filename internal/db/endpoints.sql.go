@@ -51,6 +51,23 @@ func (q *Queries) GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, er
 	return i, err
 }
 
+const getEndpointByToken = `-- name: GetEndpointByToken :one
+SELECT id, label, token, created_at, updated_at FROM endpoints WHERE token=$1
+`
+
+func (q *Queries) GetEndpointByToken(ctx context.Context, token string) (Endpoint, error) {
+	row := q.db.QueryRow(ctx, getEndpointByToken, token)
+	var i Endpoint
+	err := row.Scan(
+		&i.ID,
+		&i.Label,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listEndpoints = `-- name: ListEndpoints :many
 SELECT id, label, token, created_at, updated_at FROM endpoints ORDER BY created_at
 `
