@@ -92,3 +92,22 @@ func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Reque
 	}
 	app.writeJSON(w, http.StatusOK, req)
 }
+
+func (app *application) getRequest(w http.ResponseWriter, r *http.Request) {
+	idParams := r.PathValue("id")
+	var reqId pgtype.UUID
+	if err := reqId.Scan(idParams); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	req, err := app.db.GetRequestById(r.Context(), reqId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, req)
+}
