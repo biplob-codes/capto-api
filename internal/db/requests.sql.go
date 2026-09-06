@@ -42,6 +42,11 @@ func (q *Queries) AddRequestNote(ctx context.Context, arg AddRequestNoteParams) 
 }
 
 const createRequest = `-- name: CreateRequest :one
+WITH update_req_count AS (
+UPDATE endpoints 
+SET req_count=req_count+1 
+WHERE id=$9
+ )
 INSERT INTO requests(url,remote_addr,body_size,method,duration,headers,body,query_params,endpoint_id)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, url, remote_addr, body_size, method, duration, note, headers, body, query_params, endpoint_id, created_at, updated_at
 `

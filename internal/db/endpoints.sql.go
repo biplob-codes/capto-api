@@ -13,7 +13,7 @@ import (
 
 const createEndpoint = `-- name: CreateEndpoint :one
 INSERT INTO endpoints(label,token)
-VALUES ($1,$2) RETURNING id, label, token, created_at, updated_at
+VALUES ($1,$2) RETURNING id, label, token, created_at, updated_at, status, req_count
 `
 
 type CreateEndpointParams struct {
@@ -30,12 +30,14 @@ func (q *Queries) CreateEndpoint(ctx context.Context, arg CreateEndpointParams) 
 		&i.Token,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReqCount,
 	)
 	return i, err
 }
 
 const getEndpoint = `-- name: GetEndpoint :one
-SELECT id, label, token, created_at, updated_at FROM endpoints WHERE id=$1
+SELECT id, label, token, created_at, updated_at, status, req_count FROM endpoints WHERE id=$1
 `
 
 func (q *Queries) GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error) {
@@ -47,12 +49,14 @@ func (q *Queries) GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, er
 		&i.Token,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReqCount,
 	)
 	return i, err
 }
 
 const getEndpointByToken = `-- name: GetEndpointByToken :one
-SELECT id, label, token, created_at, updated_at FROM endpoints WHERE token=$1
+SELECT id, label, token, created_at, updated_at, status, req_count FROM endpoints WHERE token=$1
 `
 
 func (q *Queries) GetEndpointByToken(ctx context.Context, token string) (Endpoint, error) {
@@ -64,12 +68,14 @@ func (q *Queries) GetEndpointByToken(ctx context.Context, token string) (Endpoin
 		&i.Token,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReqCount,
 	)
 	return i, err
 }
 
 const listEndpoints = `-- name: ListEndpoints :many
-SELECT id, label, token, created_at, updated_at FROM endpoints ORDER BY created_at
+SELECT id, label, token, created_at, updated_at, status, req_count FROM endpoints ORDER BY created_at
 `
 
 func (q *Queries) ListEndpoints(ctx context.Context) ([]Endpoint, error) {
@@ -87,6 +93,8 @@ func (q *Queries) ListEndpoints(ctx context.Context) ([]Endpoint, error) {
 			&i.Token,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Status,
+			&i.ReqCount,
 		); err != nil {
 			return nil, err
 		}

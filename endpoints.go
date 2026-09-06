@@ -15,6 +15,15 @@ import (
 type CreateEndpointReq struct {
 	Label string `json:"label" validate:"required,min=3"`
 }
+type EndpointResponse struct {
+	ID        pgtype.UUID        `json:"id"`
+	Label     string             `json:"label"`
+	Token     string             `json:"token"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+	Status    db.EndpointStatus  `json:"status"`
+	ReqCount  pgtype.Int4        `json:"reqCount"`
+}
 
 func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	var endpointReq CreateEndpointReq
@@ -41,7 +50,16 @@ func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	app.writeJSON(w, http.StatusCreated, endpoint)
+	result := EndpointResponse{
+		ID:        endpoint.ID,
+		Label:     endpoint.Label,
+		Token:     endpoint.Token,
+		CreatedAt: endpoint.CreatedAt,
+		UpdatedAt: endpoint.UpdatedAt,
+		Status:    endpoint.Status.EndpointStatus,
+		ReqCount:  endpoint.ReqCount,
+	}
+	app.writeJSON(w, http.StatusCreated, result)
 }
 
 func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +68,20 @@ func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	app.writeJSON(w, http.StatusOK, endpoints)
+	var result []EndpointResponse
+	for _, e := range endpoints {
+		r := EndpointResponse{
+			ID:        e.ID,
+			Label:     e.Label,
+			Token:     e.Token,
+			CreatedAt: e.CreatedAt,
+			UpdatedAt: e.UpdatedAt,
+			Status:    e.Status.EndpointStatus,
+			ReqCount:  e.ReqCount,
+		}
+		result = append(result, r)
+	}
+	app.writeJSON(w, http.StatusOK, result)
 
 }
 
@@ -70,5 +101,14 @@ func (app *application) getEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	app.writeJSON(w, http.StatusOK, endpoint)
+	result := EndpointResponse{
+		ID:        endpoint.ID,
+		Label:     endpoint.Label,
+		Token:     endpoint.Token,
+		CreatedAt: endpoint.CreatedAt,
+		UpdatedAt: endpoint.UpdatedAt,
+		Status:    endpoint.Status.EndpointStatus,
+		ReqCount:  endpoint.ReqCount,
+	}
+	app.writeJSON(w, http.StatusOK, result)
 }

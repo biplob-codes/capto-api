@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type EndpointStatus string
+
+const (
+	EndpointStatusACTIVE   EndpointStatus = "ACTIVE"
+	EndpointStatusINACTIVE EndpointStatus = "INACTIVE"
+)
+
+func (e *EndpointStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = EndpointStatus(s)
+	case string:
+		*e = EndpointStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for EndpointStatus: %T", src)
+	}
+	return nil
+}
+
+type NullEndpointStatus struct {
+	EndpointStatus EndpointStatus `json:"endpointStatus"`
+	Valid          bool           `json:"valid"` // Valid is true if EndpointStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEndpointStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.EndpointStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.EndpointStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEndpointStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.EndpointStatus), nil
+}
+
 type ReqMethod string
 
 const (
@@ -63,6 +105,8 @@ type Endpoint struct {
 	Token     string             `json:"token"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+	Status    NullEndpointStatus `json:"status"`
+	ReqCount  pgtype.Int4        `json:"reqCount"`
 }
 
 type Request struct {
