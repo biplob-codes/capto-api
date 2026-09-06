@@ -19,6 +19,7 @@ type Querier interface {
 	GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error)
 	GetRequestsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]Request, error)
 	ListEndpoints(ctx context.Context) ([]Endpoint, error)
+	UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (Endpoint, error)
 }
 
 var _ Querier = (*Queries)(nil)

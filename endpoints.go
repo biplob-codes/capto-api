@@ -15,6 +15,10 @@ import (
 type CreateEndpointReq struct {
 	Label string `json:"label" validate:"required,min=3"`
 }
+type UpdateEndpointReq struct {
+	Label  string            `json:"label" validate:"required,min=3"`
+	Status db.EndpointStatus `json:"status" validate:"required,oneof=ACTIVE INACTIVE"`
+}
 type EndpointResponse struct {
 	ID        pgtype.UUID        `json:"id"`
 	Label     string             `json:"label"`
@@ -111,4 +115,43 @@ func (app *application) getEndpoint(w http.ResponseWriter, r *http.Request) {
 		ReqCount:  endpoint.ReqCount,
 	}
 	app.writeJSON(w, http.StatusOK, result)
+}
+
+func (app *application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var endpointId pgtype.UUID
+	if err := endpointId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	var upEnReq UpdateEndpointReq
+	if err := json.NewDecoder(r.Body).Decode(&upEnReq); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if err := app.validate.Struct(upEnReq); err != nil {
+		app.failedValidationResponse(w, r, err)
+		return
+	}
+
+	endpoint, err := app.db.UpdateEndpoint(r.Context(), db.UpdateEndpointParams{Status: db.NullEndpointStatus{EndpointStatus: upEnReq.Status, Valid: true}, Label: upEnReq.Label, ID: endpointId})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	result := EndpointResponse{
+		ID:        endpoint.ID,
+		Label:     endpoint.Label,
+		Token:     endpoint.Token,
+		CreatedAt: endpoint.CreatedAt,
+		UpdatedAt: endpoint.UpdatedAt,
+		Status:    endpoint.Status.EndpointStatus,
+		ReqCount:  endpoint.ReqCount,
+	}
+	app.writeJSON(w, http.StatusOK, result)
+
 }

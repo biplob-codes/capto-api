@@ -105,3 +105,33 @@ func (q *Queries) ListEndpoints(ctx context.Context) ([]Endpoint, error) {
 	}
 	return items, nil
 }
+
+const updateEndpoint = `-- name: UpdateEndpoint :one
+UPDATE endpoints
+SET 
+ status=$1,
+ label=$2
+WHERE id=$3
+RETURNING id, label, token, created_at, updated_at, status, req_count
+`
+
+type UpdateEndpointParams struct {
+	Status NullEndpointStatus `json:"status"`
+	Label  string             `json:"label"`
+	ID     pgtype.UUID        `json:"id"`
+}
+
+func (q *Queries) UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (Endpoint, error) {
+	row := q.db.QueryRow(ctx, updateEndpoint, arg.Status, arg.Label, arg.ID)
+	var i Endpoint
+	err := row.Scan(
+		&i.ID,
+		&i.Label,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Status,
+		&i.ReqCount,
+	)
+	return i, err
+}
