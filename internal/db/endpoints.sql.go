@@ -36,6 +36,15 @@ func (q *Queries) CreateEndpoint(ctx context.Context, arg CreateEndpointParams) 
 	return i, err
 }
 
+const deleteEndpoint = `-- name: DeleteEndpoint :exec
+DELETE FROM endpoints WHERE id=$1
+`
+
+func (q *Queries) DeleteEndpoint(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteEndpoint, id)
+	return err
+}
+
 const getEndpoint = `-- name: GetEndpoint :one
 SELECT id, label, token, created_at, updated_at, status, req_count FROM endpoints WHERE id=$1
 `

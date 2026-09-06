@@ -155,3 +155,21 @@ func (app *application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusOK, result)
 
 }
+
+func (app *application) deleteEndpoint(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var eId pgtype.UUID
+	if err := eId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if err := app.db.DeleteEndpoint(r.Context(), eId); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusNoContent, "")
+}

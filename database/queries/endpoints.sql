@@ -18,3 +18,6 @@ SET
  label=$2
 WHERE id=$3
 RETURNING *;
+
+-- name: DeleteEndpoint :exec
+DELETE FROM endpoints WHERE id=$1;
