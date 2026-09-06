@@ -47,6 +47,10 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	if endpoint.Status.EndpointStatus != "ACTIVE" {
+		app.errorResponse(w, http.StatusGone, "This webhook endpoint is inactive")
+		return
+	}
 	queryParams := string(queryParamsByte)
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	bodyByte, err := io.ReadAll(r.Body)
