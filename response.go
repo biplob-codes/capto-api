@@ -56,3 +56,22 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 	app.writeJSON(w, http.StatusCreated, conf)
 
 }
+
+func (app *application) listResponseConfigsByEndpointId(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var endpointId pgtype.UUID
+	if err := endpointId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	confs, err := app.db.GetResponseConfigsByEndpointId(r.Context(), endpointId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, confs)
+}

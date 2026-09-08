@@ -49,3 +49,37 @@ func (q *Queries) CreateResponseConfig(ctx context.Context, arg CreateResponseCo
 	)
 	return i, err
 }
+
+const getResponseConfigsByEndpointId = `-- name: GetResponseConfigsByEndpointId :many
+SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs WHERE endpoint_id=$1
+`
+
+func (q *Queries) GetResponseConfigsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]ResponseConfig, error) {
+	rows, err := q.db.Query(ctx, getResponseConfigsByEndpointId, endpointID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ResponseConfig
+	for rows.Next() {
+		var i ResponseConfig
+		if err := rows.Scan(
+			&i.ID,
+			&i.Method,
+			&i.EndpointID,
+			&i.Delay,
+			&i.Headers,
+			&i.Body,
+			&i.StatusCode,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

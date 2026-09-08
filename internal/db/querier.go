@@ -20,6 +20,7 @@ type Querier interface {
 	GetEndpointByToken(ctx context.Context, token string) (Endpoint, error)
 	GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error)
 	GetRequestsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]Request, error)
+	GetResponseConfigsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]ResponseConfig, error)
 	ListEndpoints(ctx context.Context) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (Endpoint, error)
 }
