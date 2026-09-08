@@ -14,6 +14,7 @@ type Querier interface {
 	AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (Request, error)
 	CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (CreateEndpointRow, error)
 	CreateRequest(ctx context.Context, arg CreateRequestParams) (Request, error)
+	CreateResponseConfig(ctx context.Context, arg CreateResponseConfigParams) (ResponseConfig, error)
 	DeleteEndpoint(ctx context.Context, id pgtype.UUID) error
 	GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error)
 	GetEndpointByToken(ctx context.Context, token string) (Endpoint, error)
