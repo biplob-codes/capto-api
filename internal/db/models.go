@@ -99,6 +99,53 @@ func (ns NullReqMethod) Value() (driver.Value, error) {
 	return string(ns.ReqMethod), nil
 }
 
+type ResMethod string
+
+const (
+	ResMethodALL     ResMethod = "ALL"
+	ResMethodGET     ResMethod = "GET"
+	ResMethodPOST    ResMethod = "POST"
+	ResMethodPUT     ResMethod = "PUT"
+	ResMethodPATCH   ResMethod = "PATCH"
+	ResMethodDELETE  ResMethod = "DELETE"
+	ResMethodOPTIONS ResMethod = "OPTIONS"
+)
+
+func (e *ResMethod) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ResMethod(s)
+	case string:
+		*e = ResMethod(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ResMethod: %T", src)
+	}
+	return nil
+}
+
+type NullResMethod struct {
+	ResMethod ResMethod `json:"resMethod"`
+	Valid     bool      `json:"valid"` // Valid is true if ResMethod is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullResMethod) Scan(value interface{}) error {
+	if value == nil {
+		ns.ResMethod, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ResMethod.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullResMethod) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ResMethod), nil
+}
+
 type Endpoint struct {
 	ID        pgtype.UUID        `json:"id"`
 	Label     string             `json:"label"`
@@ -123,4 +170,16 @@ type Request struct {
 	EndpointID  pgtype.UUID        `json:"endpointId"`
 	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
+}
+
+type ResponseConfig struct {
+	ID         pgtype.UUID        `json:"id"`
+	Method     ResMethod          `json:"method"`
+	EndpointID pgtype.UUID        `json:"endpointId"`
+	Delay      pgtype.Int4        `json:"delay"`
+	Headers    pgtype.Text        `json:"headers"`
+	Body       pgtype.Text        `json:"body"`
+	StatusCode pgtype.Int4        `json:"statusCode"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt  pgtype.Timestamptz `json:"updatedAt"`
 }

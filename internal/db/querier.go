@@ -12,7 +12,7 @@ import (
 
 type Querier interface {
 	AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (Request, error)
-	CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (Endpoint, error)
+	CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (CreateEndpointRow, error)
 	CreateRequest(ctx context.Context, arg CreateRequestParams) (Request, error)
 	DeleteEndpoint(ctx context.Context, id pgtype.UUID) error
 	GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error)

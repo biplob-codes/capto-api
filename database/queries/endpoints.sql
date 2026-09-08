@@ -1,6 +1,11 @@
 -- name: CreateEndpoint :one
+WITH new_endpoint AS (
 INSERT INTO endpoints(label,token)
-VALUES ($1,$2) RETURNING *;
+VALUES ($1,$2) RETURNING *),
+new_response_config AS (
+INSERT INTO response_configs(endpoint_id) SELECT id FROM new_endpoint)
+SELECT * FROM new_endpoint; 
+
 
 -- name: GetEndpoint :one
 SELECT * FROM endpoints WHERE id=$1;

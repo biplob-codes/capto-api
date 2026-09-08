@@ -12,8 +12,12 @@ import (
 )
 
 const createEndpoint = `-- name: CreateEndpoint :one
+WITH new_endpoint AS (
 INSERT INTO endpoints(label,token)
-VALUES ($1,$2) RETURNING id, label, token, created_at, updated_at, status, req_count
+VALUES ($1,$2) RETURNING id, label, token, created_at, updated_at, status, req_count),
+new_response_config AS (
+INSERT INTO response_configs(endpoint_id) SELECT id FROM new_endpoint)
+SELECT id, label, token, created_at, updated_at, status, req_count FROM new_endpoint
 `
 
 type CreateEndpointParams struct {
@@ -21,9 +25,19 @@ type CreateEndpointParams struct {
 	Token string `json:"token"`
 }
 
-func (q *Queries) CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (Endpoint, error) {
+type CreateEndpointRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Label     string             `json:"label"`
+	Token     string             `json:"token"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+	Status    NullEndpointStatus `json:"status"`
+	ReqCount  pgtype.Int4        `json:"reqCount"`
+}
+
+func (q *Queries) CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (CreateEndpointRow, error) {
 	row := q.db.QueryRow(ctx, createEndpoint, arg.Label, arg.Token)
-	var i Endpoint
+	var i CreateEndpointRow
 	err := row.Scan(
 		&i.ID,
 		&i.Label,
