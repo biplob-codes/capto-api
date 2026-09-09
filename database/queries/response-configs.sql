@@ -12,3 +12,6 @@ SET
  method=$1,status_code=$2,headers=$3,body=$4,delay=$5
 WHERE id=$6
 RETURNING *;
+
+-- name: DeleteResponseConfig :exec
+DELETE FROM response_configs WHERE id=$1;

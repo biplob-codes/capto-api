@@ -16,6 +16,7 @@ type Querier interface {
 	CreateRequest(ctx context.Context, arg CreateRequestParams) (Request, error)
 	CreateResponseConfig(ctx context.Context, arg CreateResponseConfigParams) (ResponseConfig, error)
 	DeleteEndpoint(ctx context.Context, id pgtype.UUID) error
+	DeleteResponseConfig(ctx context.Context, id pgtype.UUID) error
 	GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error)
 	GetEndpointByToken(ctx context.Context, token string) (Endpoint, error)
 	GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error)

@@ -50,6 +50,15 @@ func (q *Queries) CreateResponseConfig(ctx context.Context, arg CreateResponseCo
 	return i, err
 }
 
+const deleteResponseConfig = `-- name: DeleteResponseConfig :exec
+DELETE FROM response_configs WHERE id=$1
+`
+
+func (q *Queries) DeleteResponseConfig(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteResponseConfig, id)
+	return err
+}
+
 const getResponseConfigsByEndpointId = `-- name: GetResponseConfigsByEndpointId :many
 SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs WHERE endpoint_id=$1
 `

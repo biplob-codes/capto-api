@@ -112,3 +112,21 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 	}
 	app.writeJSON(w, http.StatusCreated, conf)
 }
+
+func (app *application) deleteResConfig(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var resId pgtype.UUID
+	if err := resId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if err := app.db.DeleteResponseConfig(r.Context(), resId); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusNoContent, "")
+}
