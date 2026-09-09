@@ -16,6 +16,7 @@ func (app *application) router() *http.ServeMux {
 	mux.HandleFunc("PATCH /requests/{id}/note", app.addNoteToRequests)
 	mux.HandleFunc("POST /endpoints/{id}/config", app.createResponseConfig)
 	mux.HandleFunc("GET /endpoints/{id}/config", app.listResponseConfigsByEndpointId)
+	mux.HandleFunc("PUT /response-configs/{id}", app.updateResConfig)
 
 	return mux
 }

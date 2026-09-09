@@ -83,3 +83,44 @@ func (q *Queries) GetResponseConfigsByEndpointId(ctx context.Context, endpointID
 	}
 	return items, nil
 }
+
+const updateResponseConfig = `-- name: UpdateResponseConfig :one
+UPDATE response_configs
+SET
+ method=$1,status_code=$2,headers=$3,body=$4,delay=$5
+WHERE id=$6
+RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at
+`
+
+type UpdateResponseConfigParams struct {
+	Method     ResMethod   `json:"method"`
+	StatusCode pgtype.Int4 `json:"statusCode"`
+	Headers    pgtype.Text `json:"headers"`
+	Body       pgtype.Text `json:"body"`
+	Delay      pgtype.Int4 `json:"delay"`
+	ID         pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateResponseConfig(ctx context.Context, arg UpdateResponseConfigParams) (ResponseConfig, error) {
+	row := q.db.QueryRow(ctx, updateResponseConfig,
+		arg.Method,
+		arg.StatusCode,
+		arg.Headers,
+		arg.Body,
+		arg.Delay,
+		arg.ID,
+	)
+	var i ResponseConfig
+	err := row.Scan(
+		&i.ID,
+		&i.Method,
+		&i.EndpointID,
+		&i.Delay,
+		&i.Headers,
+		&i.Body,
+		&i.StatusCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

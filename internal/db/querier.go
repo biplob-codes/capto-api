@@ -23,6 +23,7 @@ type Querier interface {
 	GetResponseConfigsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]ResponseConfig, error)
 	ListEndpoints(ctx context.Context) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (Endpoint, error)
+	UpdateResponseConfig(ctx context.Context, arg UpdateResponseConfigParams) (ResponseConfig, error)
 }
 
 var _ Querier = (*Queries)(nil)

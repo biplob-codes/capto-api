@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type CreateResponseConfig struct {
+type ResponseConfig struct {
 	Method  db.ResMethod `json:"method" validate:"oneof=ALL GET POST PUT PATCH DELETE OPTIONS"`
 	Status  int          `json:"statusCode" validate:"omitempty,min=100,max=599"`
 	Headers string       `json:"headers"`
@@ -26,7 +26,7 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	var body CreateResponseConfig
+	var body ResponseConfig
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -74,4 +74,41 @@ func (app *application) listResponseConfigsByEndpointId(w http.ResponseWriter, r
 		return
 	}
 	app.writeJSON(w, http.StatusOK, confs)
+}
+
+func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) {
+	idParam := r.PathValue("id")
+	var resId pgtype.UUID
+	if err := resId.Scan(idParam); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	var body ResponseConfig
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if err := app.validate.Struct(body); err != nil {
+		app.failedValidationResponse(w, r, err)
+		return
+	}
+	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: true}
+	pgDelay := pgtype.Int4{Int32: int32(body.Delay), Valid: true}
+	pgHeaders := pgtype.Text{String: body.Headers, Valid: len(body.Headers) > 0}
+	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
+	conf, err := app.db.UpdateResponseConfig(r.Context(), db.UpdateResponseConfigParams{Method: body.Method, StatusCode: pgStatus, Headers: pgHeaders, Body: pgBody, Delay: pgDelay, ID: resId})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			app.errorResponse(w, http.StatusConflict, "config for this method already exists")
+			return
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	app.writeJSON(w, http.StatusCreated, conf)
 }
