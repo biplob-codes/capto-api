@@ -11,7 +11,7 @@ status_code INT DEFAULT 200 CHECK (status_code BETWEEN 100 AND 599),
 created_at TIMESTAMPTZ DEFAULT now(),
 updated_at TIMESTAMPTZ DEFAULT now(),
 UNIQUE (endpoint_id,method),
-FOREIGN KEY (endpoint_id) REFERENCES endpoints ON DELETE CASCADE
+FOREIGN KEY (endpoint_id) REFERENCES endpoints(id) ON DELETE CASCADE
 );
 
 CREATE TRIGGER trg_response_configs_update 
