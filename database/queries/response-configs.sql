@@ -15,3 +15,10 @@ RETURNING *;
 
 -- name: DeleteResponseConfig :exec
 DELETE FROM response_configs WHERE id=$1;
+
+-- name: GetResponseConfigForRequest :one
+SELECT * FROM response_configs
+WHERE endpoint_id=$1 
+AND method IN ($2,'ALL')
+ORDER BY (method = 'ALL')
+LIMIT 1;

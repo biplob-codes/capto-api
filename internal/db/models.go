@@ -172,6 +172,15 @@ type Request struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
 }
 
+type Response struct {
+	ID         pgtype.UUID        `json:"id"`
+	StatusCode int32              `json:"statusCode"`
+	Headers    pgtype.Text        `json:"headers"`
+	Body       pgtype.Text        `json:"body"`
+	RequestID  pgtype.UUID        `json:"requestId"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+}
+
 type ResponseConfig struct {
 	ID         pgtype.UUID        `json:"id"`
 	Method     ResMethod          `json:"method"`

@@ -62,24 +62,45 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	var res db.ResponseConfig
 
+	res, err = app.db.GetResponseConfigForRequest(r.Context(), db.GetResponseConfigForRequestParams{EndpointID: endpoint.ID, Method: db.ResMethod(method)})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			res.StatusCode.Int32 = 200
+			res.Headers.String = "{'Content-Type':'application/json'}"
+			res.Body.String = "{'received':true}"
+		}
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 	body := string(bodyByte)
 	size := int32(len(bodyByte))
 	headers := string(headersByte)
 	pgHeaders := pgtype.Text{String: headers, Valid: len(headers) != 0}
 	pgQueryParams := pgtype.Text{String: queryParams, Valid: len(queryParams) != 0}
 	pgBody := pgtype.Text{String: body, Valid: len(body) != 0}
-
+	time.Sleep(time.Duration(res.Delay.Int32) * time.Millisecond)
 	duration := time.Since(start).Microseconds()
 
-	req, err := app.db.CreateRequest(r.Context(), db.CreateRequestParams{Url: reqUrl, RemoteAddr: remoteAddr, BodySize: size, Method: db.ReqMethod(method), Headers: pgHeaders, EndpointID: endpoint.ID, QueryParams: pgQueryParams, Body: pgBody, Duration: int32(duration)})
+	response, err := app.db.CreateRequest(r.Context(), db.CreateRequestParams{Url: reqUrl, RemoteAddr: remoteAddr, BodySize: size, Method: db.ReqMethod(method), QueryParams: pgQueryParams, Duration: int32(duration), EndpointID: endpoint.ID, RequestHeaders: pgHeaders, RequestBody: pgBody, StatusCode: res.StatusCode.Int32, ResponseBody: res.Body, ResponseHeaders: res.Headers})
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-
-	app.writeJSON(w, http.StatusCreated, req)
+	var resHeader map[string]string
+	if err := json.Unmarshal([]byte(response.Headers.String), &resHeader); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	for k, v := range resHeader {
+		w.Header().Set(k, v)
+	}
+	w.WriteHeader(int(response.StatusCode))
+	if err := json.NewEncoder(w).Encode(response.Body); err != nil {
+		app.logger.Error("failed to encode response", "error", err)
+	}
 }
 
 func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Request) {

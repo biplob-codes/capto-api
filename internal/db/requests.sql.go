@@ -43,53 +43,77 @@ func (q *Queries) AddRequestNote(ctx context.Context, arg AddRequestNoteParams) 
 
 const createRequest = `-- name: CreateRequest :one
 WITH update_req_count AS (
-UPDATE endpoints 
-SET req_count=req_count+1 
-WHERE id=$9
- )
-INSERT INTO requests(url,remote_addr,body_size,method,duration,headers,body,query_params,endpoint_id)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, url, remote_addr, body_size, method, duration, note, headers, body, query_params, endpoint_id, created_at, updated_at
+  UPDATE endpoints
+  SET req_count = req_count + 1
+  WHERE endpoints.id = $1
+),
+create_req AS (
+  INSERT INTO requests (url, remote_addr, body_size, method, duration, headers, body, query_params, endpoint_id)
+  VALUES (
+    $2, $3, $4, $5,
+    $6, $7, $8,
+    $9, $1
+  )
+  RETURNING id, url, remote_addr, body_size, method, duration, note, headers, body, query_params, endpoint_id, created_at, updated_at
+),
+create_response AS (
+  INSERT INTO responses (status_code, headers, body, request_id)
+  VALUES (
+    $10, $11, $12,
+    (SELECT create_req.id FROM create_req)
+  )
+  RETURNING id, status_code, headers, body, request_id, created_at
+)
+SELECT id, status_code, headers, body, request_id, created_at FROM create_response
 `
 
 type CreateRequestParams struct {
-	Url         string      `json:"url"`
-	RemoteAddr  string      `json:"remoteAddr"`
-	BodySize    int32       `json:"bodySize"`
-	Method      ReqMethod   `json:"method"`
-	Duration    int32       `json:"duration"`
-	Headers     pgtype.Text `json:"headers"`
-	Body        pgtype.Text `json:"body"`
-	QueryParams pgtype.Text `json:"queryParams"`
-	EndpointID  pgtype.UUID `json:"endpointId"`
+	EndpointID      pgtype.UUID `json:"endpointId"`
+	Url             string      `json:"url"`
+	RemoteAddr      string      `json:"remoteAddr"`
+	BodySize        int32       `json:"bodySize"`
+	Method          ReqMethod   `json:"method"`
+	Duration        int32       `json:"duration"`
+	RequestHeaders  pgtype.Text `json:"requestHeaders"`
+	RequestBody     pgtype.Text `json:"requestBody"`
+	QueryParams     pgtype.Text `json:"queryParams"`
+	StatusCode      int32       `json:"statusCode"`
+	ResponseHeaders pgtype.Text `json:"responseHeaders"`
+	ResponseBody    pgtype.Text `json:"responseBody"`
 }
 
-func (q *Queries) CreateRequest(ctx context.Context, arg CreateRequestParams) (Request, error) {
+type CreateRequestRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	StatusCode int32              `json:"statusCode"`
+	Headers    pgtype.Text        `json:"headers"`
+	Body       pgtype.Text        `json:"body"`
+	RequestID  pgtype.UUID        `json:"requestId"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+}
+
+func (q *Queries) CreateRequest(ctx context.Context, arg CreateRequestParams) (CreateRequestRow, error) {
 	row := q.db.QueryRow(ctx, createRequest,
+		arg.EndpointID,
 		arg.Url,
 		arg.RemoteAddr,
 		arg.BodySize,
 		arg.Method,
 		arg.Duration,
-		arg.Headers,
-		arg.Body,
+		arg.RequestHeaders,
+		arg.RequestBody,
 		arg.QueryParams,
-		arg.EndpointID,
+		arg.StatusCode,
+		arg.ResponseHeaders,
+		arg.ResponseBody,
 	)
-	var i Request
+	var i CreateRequestRow
 	err := row.Scan(
 		&i.ID,
-		&i.Url,
-		&i.RemoteAddr,
-		&i.BodySize,
-		&i.Method,
-		&i.Duration,
-		&i.Note,
+		&i.StatusCode,
 		&i.Headers,
 		&i.Body,
-		&i.QueryParams,
-		&i.EndpointID,
+		&i.RequestID,
 		&i.CreatedAt,
-		&i.UpdatedAt,
 	)
 	return i, err
 }

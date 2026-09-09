@@ -59,6 +59,36 @@ func (q *Queries) DeleteResponseConfig(ctx context.Context, id pgtype.UUID) erro
 	return err
 }
 
+const getResponseConfigForRequest = `-- name: GetResponseConfigForRequest :one
+SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs
+WHERE endpoint_id=$1 
+AND method IN ($2,'ALL')
+ORDER BY (method = 'ALL')
+LIMIT 1
+`
+
+type GetResponseConfigForRequestParams struct {
+	EndpointID pgtype.UUID `json:"endpointId"`
+	Method     ResMethod   `json:"method"`
+}
+
+func (q *Queries) GetResponseConfigForRequest(ctx context.Context, arg GetResponseConfigForRequestParams) (ResponseConfig, error) {
+	row := q.db.QueryRow(ctx, getResponseConfigForRequest, arg.EndpointID, arg.Method)
+	var i ResponseConfig
+	err := row.Scan(
+		&i.ID,
+		&i.Method,
+		&i.EndpointID,
+		&i.Delay,
+		&i.Headers,
+		&i.Body,
+		&i.StatusCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getResponseConfigsByEndpointId = `-- name: GetResponseConfigsByEndpointId :many
 SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs WHERE endpoint_id=$1
 `
