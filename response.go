@@ -35,8 +35,8 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 		app.failedValidationResponse(w, r, err)
 		return
 	}
-	pgStatus := pgtype.Int4{Int32: int32(body.Status)}
-	pgDelay := pgtype.Int4{Int32: int32(body.Delay)}
+	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: true}
+	pgDelay := pgtype.Int4{Int32: int32(body.Delay), Valid: true}
 	pgHeaders := pgtype.Text{String: body.Headers, Valid: len(body.Headers) > 0}
 	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
 	conf, err := app.db.CreateResponseConfig(r.Context(), db.CreateResponseConfigParams{Method: body.Method, EndpointID: endpointId, StatusCode: pgStatus, Delay: pgDelay, Headers: pgHeaders, Body: pgBody})
