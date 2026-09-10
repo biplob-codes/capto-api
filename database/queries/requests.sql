@@ -26,10 +26,53 @@ SELECT * FROM create_response;
 
 
 -- name: AddRequestNote :one
-UPDATE requests SET note=$1 WHERE id=$2 RETURNING *;
+UPDATE requests req
+SET note = $1
+FROM responses res
+WHERE req.id = $2 AND res.request_id = req.id
+RETURNING
+  req.id,
+  req.url,
+  req.remote_addr,
+  req.body_size,
+  req.method,
+  req.duration,
+  req.note,
+  req.headers AS request_headers,
+  req.body AS request_body,
+  req.query_params,
+  req.endpoint_id,
+  req.created_at AS request_created_at,
+  req.updated_at AS request_updated_at,
+  res.id AS response_id,
+  res.status_code,
+  res.headers AS response_headers,
+  res.body AS response_body,
+  res.created_at AS response_created_at;
 
 -- name: GetRequestById :one
-SELECT * FROM requests WHERE id=$1;
+SELECT
+  req.id,
+  req.url,
+  req.remote_addr,
+  req.body_size,
+  req.method,
+  req.duration,
+  req.note,
+  req.headers AS request_headers,
+  req.body AS request_body,
+  req.query_params,
+  req.endpoint_id,
+  req.created_at AS request_created_at,
+  req.updated_at AS request_updated_at,
+  res.id AS response_id,
+  res.status_code,
+  res.headers AS response_headers,
+  res.body AS response_body,
+  res.created_at AS response_created_at
+FROM requests req
+JOIN responses res ON res.request_id = req.id
+WHERE req.id = $1;
 
 -- name: GetRequestsByEndpointId :many
 SELECT

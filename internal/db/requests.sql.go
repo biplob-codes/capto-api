@@ -12,7 +12,29 @@ import (
 )
 
 const addRequestNote = `-- name: AddRequestNote :one
-UPDATE requests SET note=$1 WHERE id=$2 RETURNING id, url, remote_addr, body_size, method, duration, note, headers, body, query_params, endpoint_id, created_at, updated_at
+UPDATE requests req
+SET note = $1
+FROM responses res
+WHERE req.id = $2 AND res.request_id = req.id
+RETURNING
+  req.id,
+  req.url,
+  req.remote_addr,
+  req.body_size,
+  req.method,
+  req.duration,
+  req.note,
+  req.headers AS request_headers,
+  req.body AS request_body,
+  req.query_params,
+  req.endpoint_id,
+  req.created_at AS request_created_at,
+  req.updated_at AS request_updated_at,
+  res.id AS response_id,
+  res.status_code,
+  res.headers AS response_headers,
+  res.body AS response_body,
+  res.created_at AS response_created_at
 `
 
 type AddRequestNoteParams struct {
@@ -20,9 +42,30 @@ type AddRequestNoteParams struct {
 	ID   pgtype.UUID `json:"id"`
 }
 
-func (q *Queries) AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (Request, error) {
+type AddRequestNoteRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Url               string             `json:"url"`
+	RemoteAddr        string             `json:"remoteAddr"`
+	BodySize          int32              `json:"bodySize"`
+	Method            ReqMethod          `json:"method"`
+	Duration          int32              `json:"duration"`
+	Note              pgtype.Text        `json:"note"`
+	RequestHeaders    pgtype.Text        `json:"requestHeaders"`
+	RequestBody       pgtype.Text        `json:"requestBody"`
+	QueryParams       pgtype.Text        `json:"queryParams"`
+	EndpointID        pgtype.UUID        `json:"endpointId"`
+	RequestCreatedAt  pgtype.Timestamptz `json:"requestCreatedAt"`
+	RequestUpdatedAt  pgtype.Timestamptz `json:"requestUpdatedAt"`
+	ResponseID        pgtype.UUID        `json:"responseId"`
+	StatusCode        int32              `json:"statusCode"`
+	ResponseHeaders   pgtype.Text        `json:"responseHeaders"`
+	ResponseBody      pgtype.Text        `json:"responseBody"`
+	ResponseCreatedAt pgtype.Timestamptz `json:"responseCreatedAt"`
+}
+
+func (q *Queries) AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (AddRequestNoteRow, error) {
 	row := q.db.QueryRow(ctx, addRequestNote, arg.Note, arg.ID)
-	var i Request
+	var i AddRequestNoteRow
 	err := row.Scan(
 		&i.ID,
 		&i.Url,
@@ -31,12 +74,17 @@ func (q *Queries) AddRequestNote(ctx context.Context, arg AddRequestNoteParams) 
 		&i.Method,
 		&i.Duration,
 		&i.Note,
-		&i.Headers,
-		&i.Body,
+		&i.RequestHeaders,
+		&i.RequestBody,
 		&i.QueryParams,
 		&i.EndpointID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.RequestCreatedAt,
+		&i.RequestUpdatedAt,
+		&i.ResponseID,
+		&i.StatusCode,
+		&i.ResponseHeaders,
+		&i.ResponseBody,
+		&i.ResponseCreatedAt,
 	)
 	return i, err
 }
@@ -119,12 +167,54 @@ func (q *Queries) CreateRequest(ctx context.Context, arg CreateRequestParams) (C
 }
 
 const getRequestById = `-- name: GetRequestById :one
-SELECT id, url, remote_addr, body_size, method, duration, note, headers, body, query_params, endpoint_id, created_at, updated_at FROM requests WHERE id=$1
+SELECT
+  req.id,
+  req.url,
+  req.remote_addr,
+  req.body_size,
+  req.method,
+  req.duration,
+  req.note,
+  req.headers AS request_headers,
+  req.body AS request_body,
+  req.query_params,
+  req.endpoint_id,
+  req.created_at AS request_created_at,
+  req.updated_at AS request_updated_at,
+  res.id AS response_id,
+  res.status_code,
+  res.headers AS response_headers,
+  res.body AS response_body,
+  res.created_at AS response_created_at
+FROM requests req
+JOIN responses res ON res.request_id = req.id
+WHERE req.id = $1
 `
 
-func (q *Queries) GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error) {
+type GetRequestByIdRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Url               string             `json:"url"`
+	RemoteAddr        string             `json:"remoteAddr"`
+	BodySize          int32              `json:"bodySize"`
+	Method            ReqMethod          `json:"method"`
+	Duration          int32              `json:"duration"`
+	Note              pgtype.Text        `json:"note"`
+	RequestHeaders    pgtype.Text        `json:"requestHeaders"`
+	RequestBody       pgtype.Text        `json:"requestBody"`
+	QueryParams       pgtype.Text        `json:"queryParams"`
+	EndpointID        pgtype.UUID        `json:"endpointId"`
+	RequestCreatedAt  pgtype.Timestamptz `json:"requestCreatedAt"`
+	RequestUpdatedAt  pgtype.Timestamptz `json:"requestUpdatedAt"`
+	ResponseID        pgtype.UUID        `json:"responseId"`
+	StatusCode        int32              `json:"statusCode"`
+	ResponseHeaders   pgtype.Text        `json:"responseHeaders"`
+	ResponseBody      pgtype.Text        `json:"responseBody"`
+	ResponseCreatedAt pgtype.Timestamptz `json:"responseCreatedAt"`
+}
+
+func (q *Queries) GetRequestById(ctx context.Context, id pgtype.UUID) (GetRequestByIdRow, error) {
 	row := q.db.QueryRow(ctx, getRequestById, id)
-	var i Request
+	var i GetRequestByIdRow
 	err := row.Scan(
 		&i.ID,
 		&i.Url,
@@ -133,12 +223,17 @@ func (q *Queries) GetRequestById(ctx context.Context, id pgtype.UUID) (Request, 
 		&i.Method,
 		&i.Duration,
 		&i.Note,
-		&i.Headers,
-		&i.Body,
+		&i.RequestHeaders,
+		&i.RequestBody,
 		&i.QueryParams,
 		&i.EndpointID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.RequestCreatedAt,
+		&i.RequestUpdatedAt,
+		&i.ResponseID,
+		&i.StatusCode,
+		&i.ResponseHeaders,
+		&i.ResponseBody,
+		&i.ResponseCreatedAt,
 	)
 	return i, err
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type Querier interface {
-	AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (Request, error)
+	AddRequestNote(ctx context.Context, arg AddRequestNoteParams) (AddRequestNoteRow, error)
 	CreateEndpoint(ctx context.Context, arg CreateEndpointParams) (CreateEndpointRow, error)
 	CreateRequest(ctx context.Context, arg CreateRequestParams) (CreateRequestRow, error)
 	CreateResponseConfig(ctx context.Context, arg CreateResponseConfigParams) (ResponseConfig, error)
@@ -19,7 +19,7 @@ type Querier interface {
 	DeleteResponseConfig(ctx context.Context, id pgtype.UUID) error
 	GetEndpoint(ctx context.Context, id pgtype.UUID) (Endpoint, error)
 	GetEndpointByToken(ctx context.Context, token string) (Endpoint, error)
-	GetRequestById(ctx context.Context, id pgtype.UUID) (Request, error)
+	GetRequestById(ctx context.Context, id pgtype.UUID) (GetRequestByIdRow, error)
 	GetRequestsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]GetRequestsByEndpointIdRow, error)
 	GetResponseConfigForRequest(ctx context.Context, arg GetResponseConfigForRequestParams) (ResponseConfig, error)
 	GetResponseConfigsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]ResponseConfig, error)
