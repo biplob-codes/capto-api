@@ -35,7 +35,7 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 		app.failedValidationResponse(w, r, err)
 		return
 	}
-	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: true}
+	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: body.Status != 0}
 	pgDelay := pgtype.Int4{Int32: int32(body.Delay), Valid: true}
 	pgHeaders := pgtype.Text{String: body.Headers, Valid: len(body.Headers) > 0}
 	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
@@ -92,7 +92,7 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 		app.failedValidationResponse(w, r, err)
 		return
 	}
-	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: true}
+	pgStatus := pgtype.Int4{Int32: int32(body.Status), Valid: body.Status != 0}
 	pgDelay := pgtype.Int4{Int32: int32(body.Delay), Valid: true}
 	pgHeaders := pgtype.Text{String: body.Headers, Valid: len(body.Headers) > 0}
 	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
