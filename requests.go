@@ -66,13 +66,13 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 
 	res, err = app.db.GetResponseConfigForRequest(r.Context(), db.GetResponseConfigForRequestParams{EndpointID: endpoint.ID, Method: db.ResMethod(method)})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			res.StatusCode.Int32 = 200
-			res.Headers.String = "{'Content-Type':'application/json'}"
-			res.Body.String = "{'received':true}"
+		if !errors.Is(err, pgx.ErrNoRows) {
+			app.serverErrorResponse(w, r, err)
+			return
 		}
-		app.serverErrorResponse(w, r, err)
-		return
+		res.StatusCode.Int32 = 200
+		res.Headers.String = `{"Content-Type":"application/json"}`
+		res.Body.String = `{"received":true}`
 	}
 	body := string(bodyByte)
 	size := int32(len(bodyByte))
