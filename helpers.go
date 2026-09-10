@@ -36,3 +36,7 @@ func (a *application) serverErrorResponse(w http.ResponseWriter, r *http.Request
 func (a *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
 	a.errorResponse(w, http.StatusNotFound, "resource not found")
 }
+
+func (a *application) noContentResponse(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNoContent)
+}

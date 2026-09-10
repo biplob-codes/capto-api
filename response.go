@@ -128,5 +128,5 @@ func (app *application) deleteResConfig(w http.ResponseWriter, r *http.Request) 
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	app.writeJSON(w, http.StatusNoContent, "")
+	app.noContentResponse(w)
 }
