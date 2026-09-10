@@ -90,13 +90,15 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	var resHeader map[string]string
-	if err := json.Unmarshal([]byte(response.Headers.String), &resHeader); err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-	for k, v := range resHeader {
-		w.Header().Set(k, v)
+	if response.Headers.Valid && response.Headers.String != "" {
+		var resHeader map[string]string
+		if err := json.Unmarshal([]byte(response.Headers.String), &resHeader); err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		for k, v := range resHeader {
+			w.Header().Set(k, v)
+		}
 	}
 	w.WriteHeader(int(response.StatusCode))
 	if _, err := w.Write([]byte(response.Body.String)); err != nil {
