@@ -99,9 +99,10 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(k, v)
 	}
 	w.WriteHeader(int(response.StatusCode))
-	if err := json.NewEncoder(w).Encode(response.Body); err != nil {
+	if _, err := w.Write([]byte(response.Body.String)); err != nil {
 		app.logger.Error("failed to encode response", "error", err)
 	}
+
 }
 
 func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Request) {
