@@ -58,6 +58,7 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		var errMaxRead *http.MaxBytesError
 		if errors.As(err, &errMaxRead) {
 			app.errorResponse(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
 		}
 		app.serverErrorResponse(w, r, err)
 		return
