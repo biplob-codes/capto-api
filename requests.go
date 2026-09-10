@@ -71,9 +71,9 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 			app.serverErrorResponse(w, r, err)
 			return
 		}
-		res.StatusCode.Int32 = 200
-		res.Headers.String = `{"Content-Type":"application/json"}`
-		res.Body.String = `{"received":true}`
+		res.StatusCode = pgtype.Int4{Int32: 200, Valid: true}
+		res.Headers = pgtype.Text{String: `{"Content-Type":"application/json"}`, Valid: true}
+		res.Body = pgtype.Text{String: `{"received":true}`, Valid: true}
 	}
 	body := string(bodyByte)
 	size := int32(len(bodyByte))
