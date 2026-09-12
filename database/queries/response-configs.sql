@@ -1,7 +1,7 @@
 -- name: CreateResponseConfig :one
 INSERT INTO response_configs
-(endpoint_id,method,status_code,headers,body,delay)
-VALUES ($1,$2,$3,$4,$5,$6) RETURNING *;
+(endpoint_id,method,status_code,headers,body,delay,signing_secret,signature_header,tolerance_window)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *;
 
 -- name: GetResponseConfigsByEndpointId :many
 SELECT * FROM response_configs WHERE endpoint_id=$1;

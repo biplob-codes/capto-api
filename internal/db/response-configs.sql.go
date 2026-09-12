@@ -13,17 +13,20 @@ import (
 
 const createResponseConfig = `-- name: CreateResponseConfig :one
 INSERT INTO response_configs
-(endpoint_id,method,status_code,headers,body,delay)
-VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at
+(endpoint_id,method,status_code,headers,body,delay,signing_secret,signature_header,tolerance_window)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at, signing_secret, signature_header, tolerance_window
 `
 
 type CreateResponseConfigParams struct {
-	EndpointID pgtype.UUID `json:"endpointId"`
-	Method     ResMethod   `json:"method"`
-	StatusCode pgtype.Int4 `json:"statusCode"`
-	Headers    pgtype.Text `json:"headers"`
-	Body       pgtype.Text `json:"body"`
-	Delay      pgtype.Int4 `json:"delay"`
+	EndpointID      pgtype.UUID `json:"endpointId"`
+	Method          ResMethod   `json:"method"`
+	StatusCode      pgtype.Int4 `json:"statusCode"`
+	Headers         pgtype.Text `json:"headers"`
+	Body            pgtype.Text `json:"body"`
+	Delay           pgtype.Int4 `json:"delay"`
+	SigningSecret   pgtype.Text `json:"signingSecret"`
+	SignatureHeader pgtype.Text `json:"signatureHeader"`
+	ToleranceWindow int32       `json:"toleranceWindow"`
 }
 
 func (q *Queries) CreateResponseConfig(ctx context.Context, arg CreateResponseConfigParams) (ResponseConfig, error) {
@@ -34,6 +37,9 @@ func (q *Queries) CreateResponseConfig(ctx context.Context, arg CreateResponseCo
 		arg.Headers,
 		arg.Body,
 		arg.Delay,
+		arg.SigningSecret,
+		arg.SignatureHeader,
+		arg.ToleranceWindow,
 	)
 	var i ResponseConfig
 	err := row.Scan(
@@ -46,6 +52,9 @@ func (q *Queries) CreateResponseConfig(ctx context.Context, arg CreateResponseCo
 		&i.StatusCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SigningSecret,
+		&i.SignatureHeader,
+		&i.ToleranceWindow,
 	)
 	return i, err
 }
@@ -60,7 +69,7 @@ func (q *Queries) DeleteResponseConfig(ctx context.Context, id pgtype.UUID) erro
 }
 
 const getResponseConfigForRequest = `-- name: GetResponseConfigForRequest :one
-SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs
+SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at, signing_secret, signature_header, tolerance_window FROM response_configs
 WHERE endpoint_id=$1 
 AND method IN ($2,'ALL')
 ORDER BY (method = 'ALL')
@@ -85,12 +94,15 @@ func (q *Queries) GetResponseConfigForRequest(ctx context.Context, arg GetRespon
 		&i.StatusCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SigningSecret,
+		&i.SignatureHeader,
+		&i.ToleranceWindow,
 	)
 	return i, err
 }
 
 const getResponseConfigsByEndpointId = `-- name: GetResponseConfigsByEndpointId :many
-SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at FROM response_configs WHERE endpoint_id=$1
+SELECT id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at, signing_secret, signature_header, tolerance_window FROM response_configs WHERE endpoint_id=$1
 `
 
 func (q *Queries) GetResponseConfigsByEndpointId(ctx context.Context, endpointID pgtype.UUID) ([]ResponseConfig, error) {
@@ -112,6 +124,9 @@ func (q *Queries) GetResponseConfigsByEndpointId(ctx context.Context, endpointID
 			&i.StatusCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SigningSecret,
+			&i.SignatureHeader,
+			&i.ToleranceWindow,
 		); err != nil {
 			return nil, err
 		}
@@ -128,7 +143,7 @@ UPDATE response_configs
 SET
  method=$1,status_code=$2,headers=$3,body=$4,delay=$5
 WHERE id=$6
-RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at
+RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at, signing_secret, signature_header, tolerance_window
 `
 
 type UpdateResponseConfigParams struct {
@@ -160,6 +175,9 @@ func (q *Queries) UpdateResponseConfig(ctx context.Context, arg UpdateResponseCo
 		&i.StatusCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SigningSecret,
+		&i.SignatureHeader,
+		&i.ToleranceWindow,
 	)
 	return i, err
 }

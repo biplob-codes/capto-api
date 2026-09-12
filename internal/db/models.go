@@ -182,13 +182,16 @@ type Response struct {
 }
 
 type ResponseConfig struct {
-	ID         pgtype.UUID        `json:"id"`
-	Method     ResMethod          `json:"method"`
-	EndpointID pgtype.UUID        `json:"endpointId"`
-	Delay      pgtype.Int4        `json:"delay"`
-	Headers    pgtype.Text        `json:"headers"`
-	Body       pgtype.Text        `json:"body"`
-	StatusCode pgtype.Int4        `json:"statusCode"`
-	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt  pgtype.Timestamptz `json:"updatedAt"`
+	ID              pgtype.UUID        `json:"id"`
+	Method          ResMethod          `json:"method"`
+	EndpointID      pgtype.UUID        `json:"endpointId"`
+	Delay           pgtype.Int4        `json:"delay"`
+	Headers         pgtype.Text        `json:"headers"`
+	Body            pgtype.Text        `json:"body"`
+	StatusCode      pgtype.Int4        `json:"statusCode"`
+	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt       pgtype.Timestamptz `json:"updatedAt"`
+	SigningSecret   pgtype.Text        `json:"signingSecret"`
+	SignatureHeader pgtype.Text        `json:"signatureHeader"`
+	ToleranceWindow int32              `json:"toleranceWindow"`
 }
