@@ -141,18 +141,22 @@ func (q *Queries) GetResponseConfigsByEndpointId(ctx context.Context, endpointID
 const updateResponseConfig = `-- name: UpdateResponseConfig :one
 UPDATE response_configs
 SET
- method=$1,status_code=$2,headers=$3,body=$4,delay=$5
-WHERE id=$6
+ method=$1,status_code=$2,headers=$3,body=$4,delay=$5,signing_secret=$6,
+ signature_header=$7,tolerance_window=$8
+WHERE id=$9
 RETURNING id, method, endpoint_id, delay, headers, body, status_code, created_at, updated_at, signing_secret, signature_header, tolerance_window
 `
 
 type UpdateResponseConfigParams struct {
-	Method     ResMethod   `json:"method"`
-	StatusCode pgtype.Int4 `json:"statusCode"`
-	Headers    pgtype.Text `json:"headers"`
-	Body       pgtype.Text `json:"body"`
-	Delay      pgtype.Int4 `json:"delay"`
-	ID         pgtype.UUID `json:"id"`
+	Method          ResMethod   `json:"method"`
+	StatusCode      pgtype.Int4 `json:"statusCode"`
+	Headers         pgtype.Text `json:"headers"`
+	Body            pgtype.Text `json:"body"`
+	Delay           pgtype.Int4 `json:"delay"`
+	SigningSecret   pgtype.Text `json:"signingSecret"`
+	SignatureHeader pgtype.Text `json:"signatureHeader"`
+	ToleranceWindow int32       `json:"toleranceWindow"`
+	ID              pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateResponseConfig(ctx context.Context, arg UpdateResponseConfigParams) (ResponseConfig, error) {
@@ -162,6 +166,9 @@ func (q *Queries) UpdateResponseConfig(ctx context.Context, arg UpdateResponseCo
 		arg.Headers,
 		arg.Body,
 		arg.Delay,
+		arg.SigningSecret,
+		arg.SignatureHeader,
+		arg.ToleranceWindow,
 		arg.ID,
 	)
 	var i ResponseConfig

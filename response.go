@@ -102,7 +102,9 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 	pgDelay := pgtype.Int4{Int32: int32(body.Delay), Valid: true}
 	pgHeaders := pgtype.Text{String: body.Headers, Valid: len(body.Headers) > 0}
 	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
-	conf, err := app.db.UpdateResponseConfig(r.Context(), db.UpdateResponseConfigParams{Method: body.Method, StatusCode: pgStatus, Headers: pgHeaders, Body: pgBody, Delay: pgDelay, ID: resId})
+	pgSignatureHeader := pgtype.Text{String: body.SignatureHeader, Valid: len(body.SignatureHeader) > 0}
+	pgSingingSecret := pgtype.Text{String: body.SigningSecret, Valid: len(body.SigningSecret) > 0}
+	conf, err := app.db.UpdateResponseConfig(r.Context(), db.UpdateResponseConfigParams{Method: body.Method, StatusCode: pgStatus, Headers: pgHeaders, Body: pgBody, Delay: pgDelay, ID: resId, SigningSecret: pgSingingSecret, SignatureHeader: pgSignatureHeader, ToleranceWindow: int32(body.ToleranceWindow)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)

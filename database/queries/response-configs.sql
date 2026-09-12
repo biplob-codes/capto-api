@@ -9,8 +9,9 @@ SELECT * FROM response_configs WHERE endpoint_id=$1;
 -- name: UpdateResponseConfig :one
 UPDATE response_configs
 SET
- method=$1,status_code=$2,headers=$3,body=$4,delay=$5
-WHERE id=$6
+ method=$1,status_code=$2,headers=$3,body=$4,delay=$5,signing_secret=$6,
+ signature_header=$7,tolerance_window=$8
+WHERE id=$9
 RETURNING *;
 
 -- name: DeleteResponseConfig :exec
