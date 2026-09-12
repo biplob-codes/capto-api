@@ -3,11 +3,15 @@ package main
 import (
 	"encoding/json"
 	"errors"
+
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/biplob-codes/capto/internal/db"
+	"github.com/biplob-codes/capto/internal/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -74,6 +78,54 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		res.StatusCode = pgtype.Int4{Int32: 200, Valid: true}
 		res.Headers = pgtype.Text{String: `{"Content-Type":"application/json"}`, Valid: true}
 		res.Body = pgtype.Text{String: `{"received":true}`, Valid: true}
+	}
+	if res.SigningSecret.Valid {
+		sigh := r.Header.Get(res.SignatureHeader.String)
+		if len(sigh) == 0 {
+			app.errorResponse(w, http.StatusUnauthorized, "no signature header found")
+			return
+		}
+		parts := strings.Split(sigh, ",")
+		ts, tsv, tsf := strings.Cut(parts[0], "=")
+		if !tsf {
+			app.errorResponse(w, http.StatusUnauthorized, "no signature found")
+			return
+		}
+		sig, sigv, sigf := strings.Cut(parts[1], "=")
+		if !sigf {
+			app.errorResponse(w, http.StatusUnauthorized, "no signature found")
+			return
+		}
+		var timestampstr string
+		var signature string
+		if ts == "t" {
+			timestampstr = tsv
+			signature = sigv
+		}
+		if sig == "t" {
+			timestampstr = sigv
+			signature = tsv
+		}
+		timestamp, err := strconv.ParseInt(timestampstr, 10, 64)
+		if err != nil {
+
+			app.errorResponse(w, http.StatusUnauthorized, "invalid timestamp")
+			return
+		}
+
+		diff := time.Now().Unix() - int64(timestamp)
+		if diff > int64(res.ToleranceWindow) {
+
+			app.errorResponse(w, http.StatusUnauthorized, "invalid timestamp")
+			return
+		}
+
+		matched := utils.VerifySignature(timestampstr, bodyByte, res.SigningSecret.String, signature)
+		if !matched {
+			app.errorResponse(w, http.StatusUnauthorized, "invalid signature")
+			return
+		}
+
 	}
 	body := string(bodyByte)
 	size := int32(len(bodyByte))
