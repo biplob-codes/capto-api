@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,14 +20,32 @@ type RequestNote struct {
 	Note string `json:"note" validate:"required,max=256"`
 }
 
-func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
-	token := r.PathValue("token")
-	start := time.Now()
+func getReqURL(r *http.Request) string {
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
 	}
-	reqUrl := scheme + "://" + r.Host + r.RequestURI
+	return scheme + "://" + r.Host + r.RequestURI
+}
+func getResConf(app *Application, ctx context.Context, endpointId pgtype.UUID, method db.ResMethod) (db.ResponseConfig, error) {
+	resconf, err := app.Db.GetResponseConfigForRequest(ctx, db.GetResponseConfigForRequestParams{EndpointID: endpointId, Method: method})
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return db.ResponseConfig{}, err
+		}
+		var res db.ResponseConfig
+		res.StatusCode = pgtype.Int4{Int32: 200, Valid: true}
+		res.Headers = pgtype.Text{String: `{"Content-Type":"application/json"}`, Valid: true}
+		res.Body = pgtype.Text{String: `{"received":true}`, Valid: true}
+		return res, nil
+
+	}
+	return resconf, err
+}
+func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	token := r.PathValue("token")
+	reqUrl := getReqURL(r)
 	remoteAddr := r.RemoteAddr
 	method := r.Method
 	headersByte, err := json.Marshal(r.Header)
@@ -68,15 +87,10 @@ func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	var res db.ResponseConfig
 
-	res, err = app.Db.GetResponseConfigForRequest(r.Context(), db.GetResponseConfigForRequestParams{EndpointID: endpoint.ID, Method: db.ResMethod(method)})
+	res, err = getResConf(app, r.Context(), endpoint.ID, db.ResMethod(r.Method))
 	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
-		res.StatusCode = pgtype.Int4{Int32: 200, Valid: true}
-		res.Headers = pgtype.Text{String: `{"Content-Type":"application/json"}`, Valid: true}
-		res.Body = pgtype.Text{String: `{"received":true}`, Valid: true}
+		app.serverErrorResponse(w, r, err)
+		return
 	}
 	if res.SigningSecret.Valid {
 		sigh := r.Header.Get(res.SignatureHeader.String)
