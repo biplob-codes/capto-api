@@ -7,7 +7,6 @@ import (
 
 	"github.com/biplob-codes/capto/internal/db"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -51,8 +50,8 @@ func (app *Application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 			app.notFoundResponse(w, r)
 			return
 		}
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+
+		if db.IsUniqueViolation(err) {
 			app.errorResponse(w, http.StatusConflict, "config for this method already exists")
 			return
 		}
@@ -110,8 +109,8 @@ func (app *Application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 			app.notFoundResponse(w, r)
 			return
 		}
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+
+		if db.IsUniqueViolation(err) {
 			app.errorResponse(w, http.StatusConflict, "config for this method already exists")
 			return
 		}

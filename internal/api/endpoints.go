@@ -8,7 +8,6 @@ import (
 	"github.com/biplob-codes/capto/internal/db"
 	"github.com/biplob-codes/capto/internal/utils"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -57,8 +56,7 @@ func (app *Application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	endpoint, err := app.Db.CreateEndpoint(r.Context(), db.CreateEndpointParams{Label: endpointReq.Label, Token: token})
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if db.IsUniqueViolation(err) {
 			app.errorResponse(w, http.StatusConflict, "token already exists")
 			return
 		}
