@@ -29,6 +29,17 @@ type EndpointResponse struct {
 	ReqCount  pgtype.Int4        `json:"reqCount"`
 }
 
+func getEndpoint(e db.Endpoint) EndpointResponse {
+	return EndpointResponse{
+		ID:        e.ID,
+		Label:     e.Label,
+		Token:     e.Token,
+		CreatedAt: e.CreatedAt,
+		UpdatedAt: e.UpdatedAt,
+		Status:    e.Status.EndpointStatus,
+		ReqCount:  e.ReqCount,
+	}
+}
 func (app *Application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	var endpointReq CreateEndpointReq
 	if err := json.NewDecoder(r.Body).Decode(&endpointReq); err != nil {
@@ -54,16 +65,7 @@ func (app *Application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	result := EndpointResponse{
-		ID:        endpoint.ID,
-		Label:     endpoint.Label,
-		Token:     endpoint.Token,
-		CreatedAt: endpoint.CreatedAt,
-		UpdatedAt: endpoint.UpdatedAt,
-		Status:    endpoint.Status.EndpointStatus,
-		ReqCount:  endpoint.ReqCount,
-	}
-	app.writeJSON(w, http.StatusCreated, result)
+	app.writeJSON(w, http.StatusCreated, getEndpoint(db.Endpoint(endpoint)))
 }
 
 func (app *Application) listEndpoints(w http.ResponseWriter, r *http.Request) {
@@ -74,16 +76,7 @@ func (app *Application) listEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 	var result []EndpointResponse
 	for _, e := range endpoints {
-		r := EndpointResponse{
-			ID:        e.ID,
-			Label:     e.Label,
-			Token:     e.Token,
-			CreatedAt: e.CreatedAt,
-			UpdatedAt: e.UpdatedAt,
-			Status:    e.Status.EndpointStatus,
-			ReqCount:  e.ReqCount,
-		}
-		result = append(result, r)
+		result = append(result, getEndpoint(e))
 	}
 	app.writeJSON(w, http.StatusOK, result)
 
@@ -105,19 +98,11 @@ func (app *Application) getEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	result := EndpointResponse{
-		ID:        endpoint.ID,
-		Label:     endpoint.Label,
-		Token:     endpoint.Token,
-		CreatedAt: endpoint.CreatedAt,
-		UpdatedAt: endpoint.UpdatedAt,
-		Status:    endpoint.Status.EndpointStatus,
-		ReqCount:  endpoint.ReqCount,
-	}
-	app.writeJSON(w, http.StatusOK, result)
+
+	app.writeJSON(w, http.StatusOK, getEndpoint(endpoint))
 }
 
-func (app *Application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
+func (app *Application) updateEndpoint(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var endpointId pgtype.UUID
 	if err := endpointId.Scan(idParam); err != nil {
@@ -143,16 +128,8 @@ func (app *Application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	result := EndpointResponse{
-		ID:        endpoint.ID,
-		Label:     endpoint.Label,
-		Token:     endpoint.Token,
-		CreatedAt: endpoint.CreatedAt,
-		UpdatedAt: endpoint.UpdatedAt,
-		Status:    endpoint.Status.EndpointStatus,
-		ReqCount:  endpoint.ReqCount,
-	}
-	app.writeJSON(w, http.StatusOK, result)
+
+	app.writeJSON(w, http.StatusOK, getEndpoint(endpoint))
 
 }
 
