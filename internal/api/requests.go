@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/biplob-codes/capto/internal/db"
-	"github.com/biplob-codes/capto/internal/utils"
+	"github.com/biplob-codes/capto/internal/signature"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -96,14 +96,14 @@ func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var timestampstr string
-		var signature string
+		var signaturestr string
 		if ts == "t" {
 			timestampstr = tsv
-			signature = sigv
+			signaturestr = sigv
 		}
 		if sig == "t" {
 			timestampstr = sigv
-			signature = tsv
+			signaturestr = tsv
 		}
 		timestamp, err := strconv.ParseInt(timestampstr, 10, 64)
 		if err != nil {
@@ -119,7 +119,7 @@ func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		matched := utils.VerifySignature(timestampstr, bodyByte, res.SigningSecret.String, signature)
+		matched := signature.VerifySignature(timestampstr, bodyByte, res.SigningSecret.String, signaturestr)
 		if !matched {
 			app.errorResponse(w, http.StatusUnauthorized, "invalid signature")
 			return

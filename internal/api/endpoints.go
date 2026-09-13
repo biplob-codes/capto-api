@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/biplob-codes/capto/internal/db"
-	"github.com/biplob-codes/capto/internal/utils"
+	"github.com/biplob-codes/capto/internal/token"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -49,7 +49,7 @@ func (app *Application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
-	token, err := utils.GenerateToken(21)
+	token, err := token.GenerateToken(21)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
