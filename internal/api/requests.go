@@ -93,6 +93,7 @@ func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 	if res.SigningSecret.Valid {
 		if err := signature.VerifySignature(r, res.SignatureHeader.String, int64(res.ToleranceWindow), bodyByte, res.SigningSecret.String); err != nil {
 			app.errorResponse(w, http.StatusUnauthorized, err.Error())
+			return
 		}
 
 	}
