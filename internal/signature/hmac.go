@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 )
 
-func VerifySignature(timestamp string, payload []byte, secret string, claimedSignature string) bool {
+func verifySignature(timestamp string, payload []byte, secret string, claimedSignature string) bool {
 	signedPayload := timestamp + "." + string(payload)
 
 	mac := hmac.New(sha256.New, []byte(secret))

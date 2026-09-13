@@ -6,8 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/biplob-codes/capto/internal/db"
@@ -93,50 +91,8 @@ func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.SigningSecret.Valid {
-		sigh := r.Header.Get(res.SignatureHeader.String)
-		if len(sigh) == 0 {
-			app.errorResponse(w, http.StatusUnauthorized, "no signature header found")
-			return
-		}
-		parts := strings.Split(sigh, ",")
-		ts, tsv, tsf := strings.Cut(parts[0], "=")
-		if !tsf {
-			app.errorResponse(w, http.StatusUnauthorized, "no signature found")
-			return
-		}
-		sig, sigv, sigf := strings.Cut(parts[1], "=")
-		if !sigf {
-			app.errorResponse(w, http.StatusUnauthorized, "no signature found")
-			return
-		}
-		var timestampstr string
-		var signaturestr string
-		if ts == "t" {
-			timestampstr = tsv
-			signaturestr = sigv
-		}
-		if sig == "t" {
-			timestampstr = sigv
-			signaturestr = tsv
-		}
-		timestamp, err := strconv.ParseInt(timestampstr, 10, 64)
-		if err != nil {
-
-			app.errorResponse(w, http.StatusUnauthorized, "invalid timestamp")
-			return
-		}
-
-		diff := time.Now().Unix() - int64(timestamp)
-		if diff > int64(res.ToleranceWindow) {
-
-			app.errorResponse(w, http.StatusUnauthorized, "invalid timestamp")
-			return
-		}
-
-		matched := signature.VerifySignature(timestampstr, bodyByte, res.SigningSecret.String, signaturestr)
-		if !matched {
-			app.errorResponse(w, http.StatusUnauthorized, "invalid signature")
-			return
+		if err := signature.VerifySignature(r, res.SignatureHeader.String, int64(res.ToleranceWindow), bodyByte, res.SigningSecret.String); err != nil {
+			app.errorResponse(w, http.StatusUnauthorized, err.Error())
 		}
 
 	}
