@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ type RequestNote struct {
 	Note string `json:"note" validate:"required,max=256"`
 }
 
-func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
+func (app *Application) createRequest(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
 	start := time.Now()
 	scheme := "http"
@@ -42,7 +42,7 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpoint, err := app.db.GetEndpointByToken(r.Context(), token)
+	endpoint, err := app.Db.GetEndpointByToken(r.Context(), token)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -69,7 +69,7 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	var res db.ResponseConfig
 
-	res, err = app.db.GetResponseConfigForRequest(r.Context(), db.GetResponseConfigForRequestParams{EndpointID: endpoint.ID, Method: db.ResMethod(method)})
+	res, err = app.Db.GetResponseConfigForRequest(r.Context(), db.GetResponseConfigForRequestParams{EndpointID: endpoint.ID, Method: db.ResMethod(method)})
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			app.serverErrorResponse(w, r, err)
@@ -136,7 +136,7 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(res.Delay.Int32) * time.Millisecond)
 	duration := time.Since(start).Microseconds()
 
-	response, err := app.db.CreateRequest(r.Context(), db.CreateRequestParams{Url: reqUrl, RemoteAddr: remoteAddr, BodySize: size, Method: db.ReqMethod(method), QueryParams: pgQueryParams, Duration: int32(duration), EndpointID: endpoint.ID, RequestHeaders: pgHeaders, RequestBody: pgBody, StatusCode: res.StatusCode.Int32, ResponseBody: res.Body, ResponseHeaders: res.Headers})
+	response, err := app.Db.CreateRequest(r.Context(), db.CreateRequestParams{Url: reqUrl, RemoteAddr: remoteAddr, BodySize: size, Method: db.ReqMethod(method), QueryParams: pgQueryParams, Duration: int32(duration), EndpointID: endpoint.ID, RequestHeaders: pgHeaders, RequestBody: pgBody, StatusCode: res.StatusCode.Int32, ResponseBody: res.Body, ResponseHeaders: res.Headers})
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -154,19 +154,19 @@ func (app *application) createRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(int(response.StatusCode))
 	if _, err := w.Write([]byte(response.Body.String)); err != nil {
-		app.logger.Error("failed to encode response", "error", err)
+		app.Logger.Error("failed to encode response", "error", err)
 	}
 
 }
 
-func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Request) {
+func (app *Application) getEndpointRequests(w http.ResponseWriter, r *http.Request) {
 	endpointIdParam := r.PathValue("endpointId")
 	var endpointId pgtype.UUID
 	if err := endpointId.Scan(endpointIdParam); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	req, err := app.db.GetRequestsByEndpointId(r.Context(), endpointId)
+	req, err := app.Db.GetRequestsByEndpointId(r.Context(), endpointId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -178,14 +178,14 @@ func (app *application) getEndpointRequests(w http.ResponseWriter, r *http.Reque
 	app.writeJSON(w, http.StatusOK, req)
 }
 
-func (app *application) getRequest(w http.ResponseWriter, r *http.Request) {
+func (app *Application) getRequest(w http.ResponseWriter, r *http.Request) {
 	idParams := r.PathValue("id")
 	var reqId pgtype.UUID
 	if err := reqId.Scan(idParams); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	req, err := app.db.GetRequestById(r.Context(), reqId)
+	req, err := app.Db.GetRequestById(r.Context(), reqId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -197,7 +197,7 @@ func (app *application) getRequest(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusOK, req)
 }
 
-func (app *application) addNoteToRequests(w http.ResponseWriter, r *http.Request) {
+func (app *Application) addNoteToRequests(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var reqId pgtype.UUID
 	if err := reqId.Scan(idParam); err != nil {
@@ -209,12 +209,12 @@ func (app *application) addNoteToRequests(w http.ResponseWriter, r *http.Request
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.validate.Struct(reqNote); err != nil {
+	if err := app.Validate.Struct(reqNote); err != nil {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
 	pgNote := pgtype.Text{String: reqNote.Note, Valid: true}
-	req, err := app.db.AddRequestNote(r.Context(), db.AddRequestNoteParams{Note: pgNote, ID: reqId})
+	req, err := app.Db.AddRequestNote(r.Context(), db.AddRequestNoteParams{Note: pgNote, ID: reqId})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)

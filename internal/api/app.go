@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log/slog"
@@ -7,8 +7,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type application struct {
-	logger   *slog.Logger
-	db       *db.Queries
-	validate *validator.Validate
+type Application struct {
+	Logger   *slog.Logger
+	Db       *db.Queries
+	Validate *validator.Validate
 }

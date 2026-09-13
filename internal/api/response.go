@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ type ResponseConfig struct {
 	ToleranceWindow int          `json:"toleranceWindow" validate:"min=0"`
 }
 
-func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Request) {
+func (app *Application) createResponseConfig(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var endpointId pgtype.UUID
 	if err := endpointId.Scan(idParam); err != nil {
@@ -34,7 +34,7 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.validate.Struct(body); err != nil {
+	if err := app.Validate.Struct(body); err != nil {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
@@ -45,7 +45,7 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 
 	pgSignatureHeader := pgtype.Text{String: body.SignatureHeader, Valid: len(body.SignatureHeader) > 0}
 	pgSingingSecret := pgtype.Text{String: body.SigningSecret, Valid: len(body.SigningSecret) > 0}
-	conf, err := app.db.CreateResponseConfig(r.Context(), db.CreateResponseConfigParams{Method: body.Method, EndpointID: endpointId, StatusCode: pgStatus, Delay: pgDelay, Headers: pgHeaders, Body: pgBody, SigningSecret: pgSingingSecret, SignatureHeader: pgSignatureHeader, ToleranceWindow: int32(body.ToleranceWindow)})
+	conf, err := app.Db.CreateResponseConfig(r.Context(), db.CreateResponseConfigParams{Method: body.Method, EndpointID: endpointId, StatusCode: pgStatus, Delay: pgDelay, Headers: pgHeaders, Body: pgBody, SigningSecret: pgSingingSecret, SignatureHeader: pgSignatureHeader, ToleranceWindow: int32(body.ToleranceWindow)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -63,14 +63,14 @@ func (app *application) createResponseConfig(w http.ResponseWriter, r *http.Requ
 
 }
 
-func (app *application) listResponseConfigsByEndpointId(w http.ResponseWriter, r *http.Request) {
+func (app *Application) listResponseConfigsByEndpointId(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var endpointId pgtype.UUID
 	if err := endpointId.Scan(idParam); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	confs, err := app.db.GetResponseConfigsByEndpointId(r.Context(), endpointId)
+	confs, err := app.Db.GetResponseConfigsByEndpointId(r.Context(), endpointId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -82,7 +82,7 @@ func (app *application) listResponseConfigsByEndpointId(w http.ResponseWriter, r
 	app.writeJSON(w, http.StatusOK, confs)
 }
 
-func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) {
+func (app *Application) updateResConfig(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var resId pgtype.UUID
 	if err := resId.Scan(idParam); err != nil {
@@ -94,7 +94,7 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.validate.Struct(body); err != nil {
+	if err := app.Validate.Struct(body); err != nil {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
@@ -104,7 +104,7 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 	pgBody := pgtype.Text{String: body.Body, Valid: len(body.Body) > 0}
 	pgSignatureHeader := pgtype.Text{String: body.SignatureHeader, Valid: len(body.SignatureHeader) > 0}
 	pgSingingSecret := pgtype.Text{String: body.SigningSecret, Valid: len(body.SigningSecret) > 0}
-	conf, err := app.db.UpdateResponseConfig(r.Context(), db.UpdateResponseConfigParams{Method: body.Method, StatusCode: pgStatus, Headers: pgHeaders, Body: pgBody, Delay: pgDelay, ID: resId, SigningSecret: pgSingingSecret, SignatureHeader: pgSignatureHeader, ToleranceWindow: int32(body.ToleranceWindow)})
+	conf, err := app.Db.UpdateResponseConfig(r.Context(), db.UpdateResponseConfigParams{Method: body.Method, StatusCode: pgStatus, Headers: pgHeaders, Body: pgBody, Delay: pgDelay, ID: resId, SigningSecret: pgSingingSecret, SignatureHeader: pgSignatureHeader, ToleranceWindow: int32(body.ToleranceWindow)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -121,14 +121,14 @@ func (app *application) updateResConfig(w http.ResponseWriter, r *http.Request) 
 	app.writeJSON(w, http.StatusCreated, conf)
 }
 
-func (app *application) deleteResConfig(w http.ResponseWriter, r *http.Request) {
+func (app *Application) deleteResConfig(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var resId pgtype.UUID
 	if err := resId.Scan(idParam); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.db.DeleteResponseConfig(r.Context(), resId); err != nil {
+	if err := app.Db.DeleteResponseConfig(r.Context(), resId); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
 			return

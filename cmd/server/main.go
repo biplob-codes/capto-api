@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/biplob-codes/capto/internal/api"
 	"github.com/biplob-codes/capto/internal/db"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -39,11 +40,11 @@ func main() {
 	defer pool.Close()
 	dbPool := db.New(pool)
 	validate := validator.New()
-	app := application{logger: logger, db: dbPool, validate: validate}
+	app := api.Application{Logger: logger, Db: dbPool, Validate: validate}
 
 	server := &http.Server{
 		Addr:         ":8080",
-		Handler:      app.router(),
+		Handler:      app.Router(),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,

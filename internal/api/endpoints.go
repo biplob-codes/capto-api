@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -29,13 +29,13 @@ type EndpointResponse struct {
 	ReqCount  pgtype.Int4        `json:"reqCount"`
 }
 
-func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
+func (app *Application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	var endpointReq CreateEndpointReq
 	if err := json.NewDecoder(r.Body).Decode(&endpointReq); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.validate.Struct(endpointReq); err != nil {
+	if err := app.Validate.Struct(endpointReq); err != nil {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
@@ -44,7 +44,7 @@ func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	endpoint, err := app.db.CreateEndpoint(r.Context(), db.CreateEndpointParams{Label: endpointReq.Label, Token: token})
+	endpoint, err := app.Db.CreateEndpoint(r.Context(), db.CreateEndpointParams{Label: endpointReq.Label, Token: token})
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -66,8 +66,8 @@ func (app *application) createEndpoint(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusCreated, result)
 }
 
-func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
-	endpoints, err := app.db.ListEndpoints(r.Context())
+func (app *Application) listEndpoints(w http.ResponseWriter, r *http.Request) {
+	endpoints, err := app.Db.ListEndpoints(r.Context())
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -89,14 +89,14 @@ func (app *application) listEndpoints(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (app *application) getEndpoint(w http.ResponseWriter, r *http.Request) {
+func (app *Application) getEndpoint(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var id pgtype.UUID
 	if err := id.Scan(idParam); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	endpoint, err := app.db.GetEndpoint(r.Context(), id)
+	endpoint, err := app.Db.GetEndpoint(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -117,7 +117,7 @@ func (app *application) getEndpoint(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusOK, result)
 }
 
-func (app *application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
+func (app *Application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var endpointId pgtype.UUID
 	if err := endpointId.Scan(idParam); err != nil {
@@ -129,12 +129,12 @@ func (app *application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.validate.Struct(upEnReq); err != nil {
+	if err := app.Validate.Struct(upEnReq); err != nil {
 		app.failedValidationResponse(w, r, err)
 		return
 	}
 
-	endpoint, err := app.db.UpdateEndpoint(r.Context(), db.UpdateEndpointParams{Status: db.NullEndpointStatus{EndpointStatus: upEnReq.Status, Valid: true}, Label: upEnReq.Label, ID: endpointId})
+	endpoint, err := app.Db.UpdateEndpoint(r.Context(), db.UpdateEndpointParams{Status: db.NullEndpointStatus{EndpointStatus: upEnReq.Status, Valid: true}, Label: upEnReq.Label, ID: endpointId})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
@@ -156,14 +156,14 @@ func (app *application) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (app *application) deleteEndpoint(w http.ResponseWriter, r *http.Request) {
+func (app *Application) deleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
 	var eId pgtype.UUID
 	if err := eId.Scan(idParam); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	if err := app.db.DeleteEndpoint(r.Context(), eId); err != nil {
+	if err := app.Db.DeleteEndpoint(r.Context(), eId); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			app.notFoundResponse(w, r)
 			return

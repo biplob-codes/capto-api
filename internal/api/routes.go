@@ -1,8 +1,8 @@
-package main
+package api
 
 import "net/http"
 
-func (app *application) router() *http.ServeMux {
+func (app *Application) Router() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", app.healthHandler)
 	mux.HandleFunc("POST /endpoints", app.createEndpoint)
